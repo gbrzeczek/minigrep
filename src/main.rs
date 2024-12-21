@@ -58,7 +58,7 @@ fn run() -> Result<(), String> {
     Ok(())
 }
 
-fn to_colorable_slices<'a>(line: &'a str, pattern: &'a Regex) -> Option<Vec<ColorableSlice<'a>>> {
+fn to_colorable_slices<'a>(line: &'a str, pattern: &Regex) -> Option<Vec<ColorableSlice<'a>>> {
     if line.is_empty() {
         return None;
     }
