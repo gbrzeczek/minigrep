@@ -1,5 +1,5 @@
 use colored::Colorize;
-use std::{env, fs, process};
+use std::{env, fs, io::{self, BufRead}, process};
 
 use regex::Regex;
 
@@ -11,14 +11,21 @@ struct ColorableSlice<'a> {
 const USAGE_INSTRUCTION: &str = "Usage: minigrep [file path] [pattern]";
 
 fn main() {
-    if let Err(e) = run() {
+    let args: Vec<String> = env::args().collect();
+
+    let run = match args.len() {
+        1 => panic!("TODO: this should be a print and process exit"),
+        2 => run_from_stdin(args),
+        _ => run_from_file(args)
+    };
+
+    if let Err(e) = run {
         eprintln!("{e}");
         process::exit(1);
     }
 }
 
-fn run() -> Result<(), String> {
-    let args: Vec<String> = env::args().collect();
+fn run_from_file(args: Vec<String>) -> Result<(), String> {
 
     let file_path = args
         .get(1)
@@ -38,9 +45,33 @@ fn run() -> Result<(), String> {
         .map(|l| String::from(l.trim()))
         .collect();
 
+    filter_and_print(lines, &pattern);
+
+    Ok(())
+}
+
+fn run_from_stdin(args: Vec<String>) -> Result<(), String> {
+    let pattern_string = args
+        .get(1)
+        .ok_or(format!("Pattern argument is missing.\n\n{}", USAGE_INSTRUCTION))?;
+
+    let pattern = Regex::new(pattern_string).expect(USAGE_INSTRUCTION);
+
+    let lines = io::stdin()
+        .lock()
+        .lines()
+        .map(|l| l.map_err(|e| format!("Error reading input: {}", e)))
+        .collect::<Result<Vec<String>, String>>()?;
+
+    filter_and_print(lines, &pattern);
+    
+    Ok(())
+}
+
+fn filter_and_print(lines: Vec<String>, pattern: &Regex) {
     let lines: Vec<_> = lines
         .iter()
-        .filter_map(|l| to_colorable_slices(l, &pattern))
+        .filter_map(|l| to_colorable_slices(l, pattern))
         .collect();
 
     for slices in lines {
@@ -54,8 +85,6 @@ fn run() -> Result<(), String> {
 
         println!();
     }
-
-    Ok(())
 }
 
 fn to_colorable_slices<'a>(line: &'a str, pattern: &Regex) -> Option<Vec<ColorableSlice<'a>>> {
