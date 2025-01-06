@@ -14,7 +14,10 @@ fn main() {
     let args: Vec<String> = env::args().collect();
 
     let run = match args.len() {
-        1 => panic!("TODO: this should be a print and process exit"),
+        1 => {
+            eprintln!("{}", USAGE_INSTRUCTION);
+            process::exit(1);
+        },
         2 => run_from_stdin(args),
         _ => run_from_file(args)
     };
